@@ -32,9 +32,11 @@ pub mod ffi {
     use std::intrinsics;
 
     #[repr(C)]
+    #[deriving(Copy)]
     pub struct Error(pub c_uint);
 
     #[repr(C)]
+    #[deriving(Copy)]
     pub enum ColorType {
         LCT_GREY = 0,
         LCT_RGB = 2,
@@ -80,6 +82,7 @@ pub mod ffi {
     }
 
     #[repr(C)]
+    #[deriving(Copy)]
     pub struct Time {
         pub year: c_uint,
         pub month: c_uint,
@@ -138,6 +141,7 @@ pub mod ffi {
     }
 
     #[repr(C)]
+    #[deriving(Copy)]
     pub enum FilterStrategy {
         LFS_ZERO,
         LFS_MINSUM,
@@ -147,6 +151,7 @@ pub mod ffi {
     }
 
     #[repr(C)]
+    #[deriving(Copy)]
     pub enum AutoConvert {
         LAC_NO,
         LAC_ALPHA,
@@ -504,7 +509,7 @@ fn required_size(w: c_uint, h: c_uint, colortype: ColorType, bitdepth: c_uint) -
 unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: uint) -> Result<RawBitmap, Error>  {
     match res {
         Error(0) => Ok(RawBitmap {
-            buffer: CVec::new_with_dtor(out, size, proc() {
+            buffer: CVec::new_with_dtor(out, size, move || {
                 stdlib::free(out as *mut c_void);
             }),
             width: w,
@@ -516,7 +521,7 @@ unsafe fn new_bitmap(res: Error, out: *mut u8, w: c_uint, h: c_uint, size: uint)
 
 unsafe fn new_buffer(res: Error, out: *mut u8, size: size_t) -> Result<CVec<u8>, Error> {
     match res {
-        Error(0) => Ok(CVec::new_with_dtor(out, size as uint, proc() {
+        Error(0) => Ok(CVec::new_with_dtor(out, size as uint, move || {
             stdlib::free(out as *mut c_void);
         })),
         e => Err(e),
@@ -609,7 +614,7 @@ pub fn encode24_file(filepath: &Path, image: &[u8], w: c_uint, h: c_uint) -> Res
 
 pub fn error_text(code: Error) -> &'static str {
     unsafe {
-        std::str::raw::c_str_to_static_slice(ffi::lodepng_error_text(code))
+        std::str::from_c_str(ffi::lodepng_error_text(code))
     }
 }
 
